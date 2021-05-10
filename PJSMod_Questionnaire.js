@@ -55,11 +55,10 @@ const DISPLAY_RESPONSE = 3; // Trial stage for displaying response with linger
  * Contains stuff for asking survey questions
  */
 export class SurveyQuestionsModule {
-  constructor(psychoJS, expInfo, psiTurk, keys, clock) {
+  constructor(psychoJS, expInfo, psiTurk, clock) {
     this.psychoJS = psychoJS;
     this.psiTurk = psiTurk;
     this.expInfo = expInfo;
-    this.keys = keys;
     this.clock = clock;
   }
 
@@ -79,9 +78,10 @@ export class SurveyQuestionsModule {
   beginSurveySection() {
     if (this.question.status == PsychoJS.Status.NOT_STARTED) {
       this.question.setAutoDraw(true);
+      this.psychoJS.eventManager.clearEvents();
     }
     let continueOn = false;
-    let keys = this.keys.getKeys({keyList: ["enter", "return"]});
+    let keys = this.psychoJS.eventManager.getKeys({keyList: ["enter", "return"]});
     if (keys.length > 0) {
       continueOn = true;
       this.question.text = '';
@@ -216,7 +216,7 @@ export class SurveyQuestionsModule {
       this.question.setAutoDraw(true);
     }
     let continueOn = false;
-    let keys = this.keys.getKeys({keyList: ["enter", "return"]});
+    let keys = this.psychoJS.eventManager.getKeys({keyList: ["enter", "return"]});
     if (keys.length > 0) {
       continueOn = true;
       this.question.text = '';
@@ -239,7 +239,7 @@ export class SurveyQuestionsModule {
 
     // Initialize input-taking things
     this.clock.reset();
-    this.keys.clearEvents();
+    this.psychoJS.eventManager.clearEvents();
 
     // Data being recorded for this question
     this.currentData = {
@@ -293,7 +293,7 @@ export class SurveyQuestionsModule {
         break;
       // Waiting for user input on discrete input
       case TAKING_DISCRETE: {
-          let input = this.keys.getKeys({keyList: this.currentInput.getKeys()});
+          let input = this.psychoJS.eventManager.getKeys({keyList: this.currentInput.getKeys()});
           if (input.length > 0) {
             let key = input[0].name || input[0];
             let behavior = this.currentInput.optionSelected(key);
@@ -320,7 +320,7 @@ export class SurveyQuestionsModule {
         break;
       // User answered, taking specification input
       case TAKING_CONTINUOUS: {
-          let input = this.keys.getKeys({keyList: this.currentInput.getKeys()});
+          let input = this.psychoJS.eventManager.getKeys({keyList: this.currentInput.getKeys()});
           for (const key of input) {
             let keyName = input[0].name || input[0];
             if (keyName === 'return' || keyName === 'enter') {
@@ -361,7 +361,7 @@ export class SurveyQuestionsModule {
           // Otherwise, reset the loop to the beginning
           } else {
             this._buildLoopStimuli(this.specify);
-            this.keys.clearEvents();
+            this.psychoJS.eventManager.clearEvents();
             this.trialStage = 0;
           }
         }

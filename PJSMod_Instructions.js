@@ -13,6 +13,11 @@ import { InstructionsModule } from './PJSMod_Instructions.js';
 
 ...
 
+var INSTRUCTIONS_1 = [{"name": "anything", path: "<YOUR PATH>"}, ...]
+var INSTRUCTIONS_2 = [{"name": "anything2", path: "<YOUR PATH2>"}, ...]
+
+...
+
 const Instructions = new InstructionsModule(psychoJS, expInfo, psiTurk);
 flowScheduler.add(() => Instructions.initStimuli());
 ...
@@ -22,22 +27,30 @@ Instructions.addInstructions(flowScheduler, INSTRUCTIONS_2, "instr2");
 
 ...
 
+psychoJS.start({
+    ...
+    resources: [
+        ...,
+        ...INSTRUCTIONS_1 <- note the destructuring of an array
+    ]
+})
+
 */
 
 /* -------------------------------------------------------------------------
  * PsychoJS Imports
  * ------------------------------------------------------------------------- */
 
-import { TrialHandler } from 'https://pavlovia.org/lib/data-3.2.js';
-import { Scheduler } from 'https://pavlovia.org/lib/util-3.2.js';
-import * as util from 'https://pavlovia.org/lib/util-3.2.js';
-import * as visual from 'https://pavlovia.org/lib/visual-3.2.js';
+import { TrialHandler } from 'https://lib.pavlovia.org/data-2020.2.js';
+import { Scheduler } from 'https://lib.pavlovia.org/util-2020.2.js';
+import * as visual from 'https://lib.pavlovia.org/visual-2020.2.js';
+import * as util from 'https://lib.pavlovia.org/util-2020.2.js';
 
 /* -------------------------------------------------------------------------- */
 /*                               Constants                                 */
 /* -------------------------------------------------------------------------- */
 
-var MAX_INSTRUCTIONS = 1000; // Maximum loop of instructions before continuing on
+var MAX_INSTRUCTIONS = 200; // Maximum loop of instructions before continuing on
 
 /* -------------------------------------------------------------------------- */
 /*                               Instructions                                 */
@@ -63,14 +76,15 @@ export class InstructionsModule {
     /**
      * Initializes the instructions stimuli (just one image)
      */
-    initStimuli() {
+    initStimuli(units='height', size=[1.0, 0.8]) {
         this.image = new visual.ImageStim({
             win: this.psychoJS.window,
-            name: 'image', units: 'height',
+            name: 'image', units: units,
             image: undefined, mask: undefined,
-            ori: 0, pos: [0, 0], size: [1.0, 0.8],
+            ori: 0, pos: [0, 0], size: size,
             color: new util.Color([1, 1, 1]), opacity: 1
-        })
+        });
+        return Scheduler.Event.NEXT;
     }
 
     /**
@@ -90,13 +104,13 @@ export class InstructionsModule {
      */
     _generateInstructionsLoop(instructionsResources, instructionsName) {
         this.instructionsCache[instructionsName] = {
-            "resource": instructionsResources,
+            "resources": instructionsResources,
             "currentIndex": 0
         }
         return (scheduler) => {
             let trials = new TrialHandler({
-                psychoJs: this.psychoJS,
-                nreps: MAX_INSTRUCTIONS, method: TrialHandler.Method.RANDOM,
+                psychoJS: this.psychoJS,
+                nReps: MAX_INSTRUCTIONS, method: TrialHandler.Method.SEQUENTIAL,
                 extraInfo: this.expInfo, originPath: undefined,
                 trialList: undefined,
                 seed: undefined, name: instructionsName
@@ -110,9 +124,11 @@ export class InstructionsModule {
                 scheduler.add(() => this._InstructionsRoutineEnd());
                 // If the end condition is met (at end of instructions, return)
                 scheduler.add(() => {
-                    if (this.currInstr.currentIndex == -1) { scheduler.stop(); }
+                    if (this.currInstr.currentIndex == -1) { 
+                        scheduler.stop(); 
+                    }
                     return Scheduler.Event.NEXT;
-                })
+                });
             }
 
             // Move on to the next event
@@ -127,7 +143,7 @@ export class InstructionsModule {
     _InstructionsRoutineBegin(instructionsName) {
         this.currInstr = this.instructionsCache[instructionsName];
         // Build the image for this stage of the instructios
-        this.image.setImage(this.currInstr.resource[this.currInstr.currentIndex]["name"]);
+        this.image.setImage(this.currInstr.resources[this.currInstr.currentIndex]["name"]);
         this.image.setAutoDraw(true);
         // Slide has not finished
         this.slideFinished = false;
